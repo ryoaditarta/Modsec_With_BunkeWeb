@@ -181,8 +181,7 @@ The OWASP CRS provides a comprehensive set of security rules capable of detectin
 | SQL Injection | `1' OR '1'='1` | ✅ Blocked (403) |
 | Reflected XSS | `<script>alert(1)</script>` | ✅ Blocked (403) |
 | Stored XSS | `<img src=x onerror=alert(1)>` | ✅ Blocked |
-| Command Injection | `127.0.0.1; whoami` | ⏳ Planned |
-| Local File Inclusion | `../../../../etc/passwd` | ⏳ Planned |
+| Command Injection | `127.0.0.1; whoami` | ✅  Planned |
 
 ---
 
