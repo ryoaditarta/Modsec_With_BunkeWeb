@@ -222,6 +222,11 @@ This project demonstrates understanding of:
 
 > *(Insert screenshot here)*
 
+## Command Injection
+<img width="2536" height="1600" alt="image" src="https://github.com/user-attachments/assets/01c41ecd-6223-4b66-b5f4-85c25bd19eb4" />
+<img width="2536" height="1600" alt="image" src="https://github.com/user-attachments/assets/181c2cee-c966-4d25-8930-3a391f61135d" />
+
+
 ## BunkerWeb Dashboard
 
 > *(Insert screenshot here)*
