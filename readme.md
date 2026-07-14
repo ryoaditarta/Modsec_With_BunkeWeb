@@ -1,111 +1,243 @@
-# DVWA + BunkerWeb WAF — Docker Compose Setup
+# 🛡️ Web Application Firewall using BunkerWeb + ModSecurity
 
-## Arsitektur
+A Docker-based Web Application Firewall (WAF) laboratory that protects the **Damn Vulnerable Web Application (DVWA)** using **BunkerWeb**, **ModSecurity**, and the **OWASP Core Rule Set (CRS)**.
+
+This project demonstrates how a reverse proxy WAF can detect and block common web attacks such as **SQL Injection (SQLi)** and **Cross-Site Scripting (XSS)** before they reach the target application.
+
+---
+
+# Architecture
 
 ```
-Internet / Browser
-       │
-       ▼
-┌──────────────────────────────────────────┐
-│  BunkerWeb (WAF + Reverse Proxy)         │  ← port 80 / 443
-│  - ModSecurity + OWASP CRS              │
-│  - Bad behavior detection               │
-│  - Rate limiting                        │
-│  - Bot detection                        │
-│  - Web UI dashboard                     │
-└────────────┬─────────────────────────────┘
-             │ bw-services network
-             ▼
-┌──────────────────────────────────────────┐
-│  DVWA                                    │  ← tidak expose ke host
-│  (Damn Vulnerable Web Application)       │
-└────────────┬─────────────────────────────┘
-             │ dvwa-internal network
-             ▼
-┌──────────────────────────────────────────┐
-│  MariaDB (DVWA database)                 │
-└──────────────────────────────────────────┘
-
-Komponen BunkerWeb:
-  bunkerweb    ← Nginx + ModSec (traffic masuk)
-  bw-scheduler ← Config manager
-  bw-ui        ← Web dashboard
-  bw-db        ← Database BunkerWeb (MariaDB)
+                    Browser
+                       │
+                       ▼
+            +---------------------+
+            |     BunkerWeb       |
+            |---------------------|
+            | • Reverse Proxy     |
+            | • ModSecurity WAF   |
+            | • OWASP CRS         |
+            | • Rate Limiting     |
+            +----------+----------+
+                       │
+                       ▼
+            +---------------------+
+            |        DVWA         |
+            +----------+----------+
+                       │
+                       ▼
+            +---------------------+
+            |      MariaDB        |
+            +---------------------+
 ```
 
-## Cara Pakai
+---
 
-### 1. Jalankan stack
+# Features
+
+- Docker-based deployment
+- Reverse Proxy using BunkerWeb
+- ModSecurity Web Application Firewall
+- OWASP Core Rule Set (CRS)
+- SQL Injection protection
+- Cross-Site Scripting (XSS) protection
+- Docker network isolation
+- Security testing using DVWA
+
+---
+
+# Tech Stack
+
+- Docker Compose
+- BunkerWeb
+- ModSecurity
+- OWASP CRS
+- DVWA
+- MariaDB
+
+---
+
+# Project Structure
+
+```
+.
+├── docker-compose.yml
+├── README.md
+├── modsec
+│   └── custom-rules.conf
+└── screenshots
+```
+
+---
+
+# Deployment
+
+Clone repository
+
+```bash
+git clone https://github.com/<your-username>/Modsec_With_BunkerWeb.git
+cd Modsec_With_BunkerWeb
+```
+
+Start containers
+
 ```bash
 docker compose up -d
 ```
 
-### 2. Buka Web UI BunkerWeb
-Buka browser → **http://localhost/changeme**
+Verify containers
 
-Ikuti setup wizard:
-- Buat akun admin
-- Konfigurasi reverse proxy (skip dulu, bisa dari UI nanti)
+```bash
+docker ps
+```
 
-### 3. Tambahkan DVWA sebagai service di BunkerWeb UI
-Setelah wizard selesai, masuk ke menu **Services** → **New Service**:
+Open DVWA
 
-| Field | Value |
-|-------|-------|
-| Server name | `localhost` |
-| Use reverse proxy | ✅ Yes |
-| Reverse proxy URL | `/` |
-| Reverse proxy host | `http://dvwa:80` |
-
-Klik **Save** → BunkerWeb otomatis reload config.
-
-### 4. Akses DVWA
-Buka browser → **http://localhost**
-
-Login: `admin` / `password` → klik **Create / Reset Database**
+```
+http://localhost
+```
 
 ---
 
-## Port & Akses
+# Security Testing
 
-| Service | URL | Keterangan |
-|---------|-----|------------|
-| DVWA (via WAF) | http://localhost | Traffic diproteksi BunkerWeb |
-| BunkerWeb UI | http://localhost/changeme | Dashboard manajemen WAF |
+## SQL Injection
+
+Payload
+
+```sql
+1' OR '1'='1
+```
+
+Result
+
+```
+HTTP 403 Forbidden
+```
+
+The request was blocked by **ModSecurity** before reaching DVWA.
 
 ---
 
-## Fitur BunkerWeb yang Aktif
+## Cross Site Scripting (XSS)
 
-| Fitur | Status |
-|-------|--------|
-| ModSecurity WAF | ✅ On |
-| OWASP CRS Rules | ✅ On |
-| Bad Behavior Detection | ✅ On |
-| Rate Limiting | ✅ On |
-| Bot Protection | ✅ On |
-| DNSBL | ❌ Off (lab lokal) |
+Payload
+
+```html
+<script>alert(1)</script>
+```
+
+Result
+
+```
+HTTP 403 Forbidden
+```
 
 ---
 
-## Tips Lab
+# Components
 
-**Lihat log BunkerWeb secara live:**
-```bash
-docker logs -f bunkerweb
-docker logs -f bw-scheduler
-```
+## BunkerWeb
 
-**Cek status semua container:**
-```bash
-docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
-```
+Acts as the reverse proxy and Web Application Firewall.
 
-**Hentikan & bersihkan:**
-```bash
-# Hentikan saja
-docker compose down
+Responsibilities:
 
-# Hentikan + hapus semua data (reset total)
-docker compose down -v
-```
+- Reverse Proxy
+- Request Inspection
+- TLS Termination
+- Traffic Filtering
+- Rate Limiting
+
+---
+
+## ModSecurity
+
+ModSecurity analyzes every incoming HTTP request and compares it against security rules.
+
+If a request matches a malicious signature, it is immediately blocked.
+
+---
+
+## OWASP Core Rule Set
+
+The OWASP CRS provides a comprehensive set of security rules capable of detecting:
+
+- SQL Injection
+- Cross Site Scripting (XSS)
+- Local File Inclusion (LFI)
+- Remote Code Execution (RCE)
+- Command Injection
+- Protocol Violations
+- HTTP Anomaly Detection
+
+---
+
+# Testing Result
+
+| Attack | Payload | Result |
+|---------|----------|--------|
+| SQL Injection | `1' OR '1'='1` | ✅ Blocked (403) |
+| Reflected XSS | `<script>alert(1)</script>` | ✅ Blocked (403) |
+| Stored XSS | `<img src=x onerror=alert(1)>` | ✅ Blocked |
+| Command Injection | `127.0.0.1; whoami` | ⏳ Planned |
+| Local File Inclusion | `../../../../etc/passwd` | ⏳ Planned |
+
+---
+
+# Future Improvements
+
+- Custom ModSecurity Rules
+- ModSecurity Audit Logging
+- Grafana Dashboard
+- ELK Stack Integration
+- Automated Security Testing
+- HTTPS using Let's Encrypt
+- Custom Rule Tuning
+
+---
+
+# Learning Outcomes
+
+This project demonstrates understanding of:
+
+- Reverse Proxy Architecture
+- Web Application Firewall (WAF)
+- ModSecurity
+- OWASP Core Rule Set
+- Docker Networking
+- Web Security Testing
+- SQL Injection Mitigation
+- Cross-Site Scripting Mitigation
+
+---
+
+# Screenshots
+
+## SQL Injection Blocked
+
+> *(Insert screenshot here)*
+
+## XSS Blocked
+
+> *(Insert screenshot here)*
+
+## BunkerWeb Dashboard
+
+> *(Insert screenshot here)*
+
+---
+
+# Author
+
+**I Gusti Ngurah Ryo Adi Tarta**
+
+Bachelor of Computer Science
+
+Interested in:
+
+- Network Security
+- Cybersecurity
+- Infrastructure
+- SOC Engineering
