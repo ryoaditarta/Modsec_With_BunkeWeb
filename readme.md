@@ -1,4 +1,4 @@
-# 🛡️ Web Application Firewall using BunkerWeb + ModSecurity
+<img width="2536" height="1600" alt="image" src="https://github.com/user-attachments/assets/f5081283-0150-41d7-9d16-8d54c4ef9d73" /># 🛡️ Web Application Firewall using BunkerWeb + ModSecurity
 
 A Docker-based Web Application Firewall (WAF) laboratory that protects the **Damn Vulnerable Web Application (DVWA)** using **BunkerWeb**, **ModSecurity**, and the **OWASP Core Rule Set (CRS)**.
 
@@ -215,12 +215,13 @@ This project demonstrates understanding of:
 # Screenshots
 
 ## SQL Injection Blocked
-
-> *(Insert screenshot here)*
+<img width="2536" height="1600" alt="image" src="https://github.com/user-attachments/assets/7e62ac6d-7356-404b-bcef-5b8b95401603" />
+<img width="2536" height="1600" alt="image" src="https://github.com/user-attachments/assets/2f26a680-dd4c-4a42-8315-bd288b259fdd" />
 
 ## XSS Blocked
+<img width="2536" height="1600" alt="image" src="https://github.com/user-attachments/assets/2e1c189d-9be1-4b2f-91c0-dbfa73bfa47d" />
+<img width="2536" height="1600" alt="image" src="https://github.com/user-attachments/assets/b8a45e27-229f-43d5-aead-0620b0bfdc6e" />
 
-> *(Insert screenshot here)*
 
 ## Command Injection
 <img width="2536" height="1600" alt="image" src="https://github.com/user-attachments/assets/01c41ecd-6223-4b66-b5f4-85c25bd19eb4" />
