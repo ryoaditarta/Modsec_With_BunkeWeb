@@ -228,11 +228,71 @@ This project demonstrates understanding of:
 <img width="2536" height="1600" alt="image" src="https://github.com/user-attachments/assets/181c2cee-c966-4d25-8930-3a391f61135d" />
 
 
-## BunkerWeb Dashboard
+## How It Works
 
-> *(Insert screenshot here)*
+Imagine a company building protected by a security checkpoint.
 
----
+- 🏢 **DVWA** is the **company building**, where valuable resources and business operations reside.
+- 🚪 **BunkerWeb** acts as the **main entrance (reverse proxy)**. Every visitor must enter through this gate.
+- 👮 **ModSecurity** is the **security guard**, responsible for inspecting every visitor before allowing entry.
+- 📖 **OWASP Core Rule Set (CRS)** represents the **security procedures (SOPs)** that the security guard follows to identify suspicious behavior.
+
+Since the company has only one entrance, **no visitor can bypass the security guard**. Every request must be inspected before reaching the application.
+
+### Analogy Flow
+
+```
+                 Visitor
+                    │
+                    ▼
+          Main Entrance (BunkerWeb)
+                    │
+                    ▼
+         Security Guard (ModSecurity)
+                    │
+                    ▼
+     Security SOP (OWASP CRS Rules)
+                    │
+          ┌─────────┴─────────┐
+          │                   │
+   Suspicious Visitor     Legitimate Visitor
+          │                   │
+          ▼                   ▼
+     Access Denied       Door Opens
+      (HTTP 403)              │
+                              ▼
+                    Company Building (DVWA)
+```
+
+### Technical Request Flow
+
+```
+           Client
+              │
+              ▼
+   BunkerWeb (Reverse Proxy)
+              │
+              ▼
+ ModSecurity + OWASP CRS
+              │
+      ┌───────┴────────┐
+      │                │
+ Attack Detected   Legitimate Request
+      │                │
+      ▼                ▼
+ HTTP 403         Forward Request
+ Forbidden           to DVWA
+```
+
+### Why BunkerWeb?
+
+ModSecurity is **not a web server** and **cannot receive HTTP traffic by itself**. It is a **Web Application Firewall (WAF) engine** that must be integrated with a web server or reverse proxy.
+
+BunkerWeb provides that reverse proxy layer. It receives every incoming request, invokes ModSecurity to inspect it against the OWASP Core Rule Set, and forwards only legitimate traffic to the protected application.
+
+This ensures that **every request is inspected before reaching the application**, preventing common web attacks such as SQL Injection and Cross-Site Scripting (XSS).
+
+
 
 # Author
 
