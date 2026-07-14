@@ -1,0 +1,185 @@
+# ================================================================
+# DVWA + BunkerWeb WAF Stack
+# ================================================================
+# Arsitektur:
+#   Browser
+#     └─► BunkerWeb (WAF + Reverse Proxy) :80 / :443
+#           └─► DVWA :80
+#                 └─► MariaDB DVWA :3306
+#
+# Web UI BunkerWeb: http://localhost/changeme  (setup wizard pertama kali)
+# DVWA:             http://localhost/dvwa
+# ================================================================
+
+x-bw-env: &bw-env
+  DATABASE_URI: "mariadb+pymysql://bunkerweb:bwpassword@bw-db:3306/db"
+  API_WHITELIST_IP: "127.0.0.0/8 10.0.0.0/8 172.16.0.0/12 192.168.0.0/16"
+
+services:
+
+  # ──────────────────────────────────────────
+  # BunkerWeb – WAF + Reverse Proxy (Nginx)
+  # ──────────────────────────────────────────
+  bunkerweb:
+    image: bunkerity/bunkerweb:1.6.11
+    container_name: bunkerweb
+    restart: unless-stopped
+    ports:
+      - "80:8080/tcp"
+      - "443:8443/tcp"
+      - "443:8443/udp"   # QUIC / HTTP3
+    environment:
+      <<: *bw-env
+    networks:
+      - bw-universe
+      - bw-services
+    depends_on:
+      - bw-db
+
+  # ──────────────────────────────────────────
+  # BunkerWeb Scheduler – config manager
+  # ──────────────────────────────────────────
+  bw-scheduler:
+    image: bunkerity/bunkerweb-scheduler:1.6.11
+    container_name: bw-scheduler
+    restart: unless-stopped
+    depends_on:
+      - bunkerweb
+    volumes:
+      - bw-storage:/data
+    environment:
+      <<: *bw-env
+      BUNKERWEB_INSTANCES: "bunkerweb"
+      SERVER_NAME: "localhost"
+      MULTISITE: "yes"
+      API_WHITELIST_IP: "127.0.0.0/8 10.0.0.0/8 172.16.0.0/12 192.168.0.0/16"
+      UI_HOST: "http://bw-ui:7000"
+
+      # ── Konfigurasi Web UI BunkerWeb ──────
+      # UI diakses via http://localhost/changeme
+      localhost_USE_TEMPLATE: "ui"
+      localhost_USE_REVERSE_PROXY: "yes"
+      localhost_REVERSE_PROXY_URL: "/changeme"
+      localhost_REVERSE_PROXY_HOST: "http://bw-ui:7000"
+
+      # ── Konfigurasi DVWA service ──────────
+      # DVWA diakses via http://localhost/dvwa (strip prefix)
+      # Karena DVWA expect root path, kita pakai sub-path proxy
+      # Lebih praktis: DVWA akses via http://localhost setelah
+      # setup UI selesai, tambah service baru di Web UI
+
+      # ── Security settings global ──────────
+      USE_MODSECURITY: "yes"
+      USE_MODSECURITY_CRS: "yes"
+      MODSECURITY_SEC_RULE_ENGINE: "On"
+      USE_BAD_BEHAVIOR: "yes"
+      USE_LIMIT_REQ: "yes"
+      USE_DNSBL: "no"           # matikan DNSBL untuk lab lokal
+      DISABLE_DEFAULT_SERVER: "no"
+
+      # Timezone
+      TZ: "Asia/Jakarta"
+    networks:
+      - bw-universe
+      - bw-services
+
+  # ──────────────────────────────────────────
+  # BunkerWeb UI – Web dashboard
+  # ──────────────────────────────────────────
+  bw-ui:
+    image: bunkerity/bunkerweb-ui:1.6.11
+    container_name: bw-ui
+    restart: unless-stopped
+    depends_on:
+      - bw-db
+    environment:
+      <<: *bw-env
+      TZ: "Asia/Jakarta"
+    networks:
+      - bw-universe
+      - bw-services
+
+  # ──────────────────────────────────────────
+  # MariaDB – Database BunkerWeb
+  # ──────────────────────────────────────────
+  bw-db:
+    image: mariadb:10.11
+    container_name: bw-db
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: "bw_root_p@ss"
+      MYSQL_DATABASE: "db"
+      MYSQL_USER: "bunkerweb"
+      MYSQL_PASSWORD: "bwpassword"
+    volumes:
+      - bw-db-data:/var/lib/mysql
+    networks:
+      - bw-universe
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # ──────────────────────────────────────────
+  # DVWA – Damn Vulnerable Web Application
+  # Tidak expose port ke host, hanya lewat BunkerWeb
+  # ──────────────────────────────────────────
+  dvwa:
+    image: ghcr.io/digininja/dvwa:latest
+    container_name: dvwa
+    restart: unless-stopped
+    environment:
+      DB_SERVER: dvwa-db
+      DB_PORT: "3306"
+      DB_DATABASE: dvwa
+      DB_USERNAME: dvwa
+      DB_PASSWORD: "dvwa_p@ssw0rd"
+      RECAPTCHA_PRIV_KEY: ""
+      RECAPTCHA_PUB_KEY: ""
+    depends_on:
+      dvwa-db:
+        condition: service_healthy
+    networks:
+      - bw-services    # terhubung ke BunkerWeb
+      - dvwa-internal  # terhubung ke DB-nya sendiri
+
+  # ──────────────────────────────────────────
+  # MariaDB – Database DVWA
+  # ──────────────────────────────────────────
+  dvwa-db:
+    image: mariadb:10.11
+    container_name: dvwa-db
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: "dvwa_root_p@ss"
+      MYSQL_DATABASE: dvwa
+      MYSQL_USER: dvwa
+      MYSQL_PASSWORD: "dvwa_p@ssw0rd"
+    volumes:
+      - dvwa-db-data:/var/lib/mysql
+    networks:
+      - dvwa-internal
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+networks:
+  bw-universe:
+    driver: bridge
+    name: bw-universe
+  bw-services:
+    driver: bridge
+    name: bw-services
+  dvwa-internal:
+    driver: bridge
+    internal: true    # isolasi total, tidak ada akses ke luar
+
+volumes:
+  bw-storage:
+  bw-db-data:
+  dvwa-db-data:
