@@ -1,4 +1,4 @@
-<img width="2536" height="1600" alt="image" src="https://github.com/user-attachments/assets/f5081283-0150-41d7-9d16-8d54c4ef9d73" /># 🛡️ Web Application Firewall using BunkerWeb + ModSecurity
+# 🛡️ Web Application Firewall using BunkerWeb + ModSecurity
 
 A Docker-based Web Application Firewall (WAF) laboratory that protects the **Damn Vulnerable Web Application (DVWA)** using **BunkerWeb**, **ModSecurity**, and the **OWASP Core Rule Set (CRS)**.
 
